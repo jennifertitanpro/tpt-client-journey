@@ -64,7 +64,12 @@
             <div class="space-y-4">
                 <button onclick="githubLogin()" class="w-full bg-gray-900 text-white py-3 px-4 rounded-lg hover:bg-gray-800 transition flex items-center justify-center">
                     <i class="fab fa-github mr-2"></i>
-                    Sign in with GitHub
+                    Sign in with GitHub OAuth
+                </button>
+                
+                <button onclick="tokenLogin()" class="w-full bg-gray-700 text-white py-3 px-4 rounded-lg hover:bg-gray-600 transition flex items-center justify-center">
+                    <i class="fas fa-key mr-2"></i>
+                    Sign in with Token
                 </button>
                 
                 <div class="relative my-6">
@@ -654,6 +659,69 @@
             
             localStorage.setItem('titanProUser', JSON.stringify(currentUser));
             initializeApp();
+        }
+
+        function tokenLogin() {
+            const token = prompt('Enter your GitHub Personal Access Token:\n\n' + 
+                'To create one:\n' +
+                '1. Go to GitHub → Settings → Developer settings → Personal access tokens\n' +
+                '2. Generate new token (classic)\n' +
+                '3. Select scopes: repo, read:user, read:org\n' +
+                '4. Copy and paste the token here');
+            
+            if (!token) return;
+            
+            showNotification('Validating token...', 'info');
+            
+            // Test the token
+            fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => response.json())
+            .then(async userData => {
+                if (userData.login) {
+                    // Check if user is in organization
+                    let role = 'client';
+                    try {
+                        const orgResponse = await fetch(`https://api.github.com/orgs/titan-pro-technologies/members/${userData.login}`, {
+                            headers: {
+                                'Authorization': `token ${token}`,
+                                'Accept': 'application/vnd.github.v3+json'
+                            }
+                        });
+                        if (orgResponse.status === 204) {
+                            role = 'coach';
+                        }
+                    } catch (e) {
+                        // Default to client
+                    }
+                    
+                    currentUser = {
+                        name: userData.name || userData.login,
+                        email: userData.email,
+                        role: role,
+                        githubToken: token,
+                        login: userData.login
+                    };
+                    
+                    localStorage.setItem('titanProUser', JSON.stringify(currentUser));
+                    
+                    if (token !== 'demo-token') {
+                        octokit = new Octokit({ auth: token });
+                    }
+                    
+                    initializeApp();
+                    showNotification('Successfully logged in!', 'success');
+                } else {
+                    showNotification('Invalid token. Please check and try again.', 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Error validating token: ' + error.message, 'error');
+            });
         }
 
         function logout() {
