@@ -22,6 +22,26 @@
             from { transform: translateX(100%); }
             to { transform: translateX(0); }
         }
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* Scrollbar for navigation tabs */
+        nav::-webkit-scrollbar {
+            height: 4px;
+        }
+        nav::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        nav::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 2px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -143,6 +163,14 @@
                                 <span id="companyDisplay" class="font-medium ml-2">-</span>
                             </div>
                             <div>
+                                <span class="text-gray-600">Technicians:</span>
+                                <span id="technicianCount" class="font-medium ml-2">0</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Employees:</span>
+                                <span id="employeeCount" class="font-medium ml-2">0</span>
+                            </div>
+                            <div>
                                 <span class="text-gray-600">Status:</span>
                                 <span id="statusDisplay" class="font-medium ml-2">Active</span>
                             </div>
@@ -188,6 +216,15 @@
                         <button onclick="switchTab('phones')" class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="phones">
                             Phones & Comms
                         </button>
+                        <button onclick="switchTab('technicians')" class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="technicians">
+                            Technicians
+                        </button>
+                        <button onclick="switchTab('employees')" class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="employees">
+                            Employees
+                        </button>
+                        <button onclick="switchTab('skills')" class="tab-button px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="skills">
+                            Skills & Job Types
+                        </button>
                     </nav>
                 </div>
 
@@ -198,6 +235,9 @@
                     <div id="integrations-tab" class="tab-content"></div>
                     <div id="operations-tab" class="tab-content"></div>
                     <div id="phones-tab" class="tab-content"></div>
+                    <div id="technicians-tab" class="tab-content"></div>
+                    <div id="employees-tab" class="tab-content"></div>
+                    <div id="skills-tab" class="tab-content"></div>
                 </div>
             </div>
         </div>
@@ -213,7 +253,7 @@
             GITHUB_CLIENT_ID: 'Ov23liVgHG3gjkqmbxfS',
             
             // Your backend OAuth handler URL - UPDATE THIS after deploying to Netlify!
-            BACKEND_URL: 'https://titan-pro-client-journey.netlify.app/.netlify/functions',
+            BACKEND_URL: 'https://your-site.netlify.app/.netlify/functions',
             
             // GitHub organization and repository
             GITHUB_ORG: 'titan-pro-technologies',
@@ -238,7 +278,70 @@
                             { id: "tenantId", label: "Tenant ID", type: "text", required: true },
                             { id: "tenantName", label: "Tenant Name", type: "text", required: true }
                         ]
+                    }
+            },
+            technicians: {
+                title: "Technicians",
+                type: "list",
+                fields: [
+                    { id: "firstName", label: "First Name", type: "text", required: true },
+                    { id: "lastName", label: "Last Name", type: "text", required: true },
+                    { id: "email", label: "Email", type: "text" },
+                    { id: "phone", label: "Phone", type: "text" },
+                    { id: "employeeId", label: "Employee ID", type: "text" },
+                    { id: "role", label: "Role/Title", type: "text" },
+                    { id: "skills", label: "Skills", type: "multiselect", options: [] },
+                    { id: "certifications", label: "Certifications", type: "text" },
+                    { id: "hireDate", label: "Hire Date", type: "date" },
+                    { id: "active", label: "Active", type: "checkbox" }
+                ]
+            },
+            employees: {
+                title: "Employees",
+                type: "list",
+                fields: [
+                    { id: "firstName", label: "First Name", type: "text", required: true },
+                    { id: "lastName", label: "Last Name", type: "text", required: true },
+                    { id: "email", label: "Email", type: "text" },
+                    { id: "phone", label: "Phone", type: "text" },
+                    { id: "employeeId", label: "Employee ID", type: "text" },
+                    { id: "department", label: "Department", type: "select", 
+                      options: ["Office", "Field", "Sales", "Management", "Support"] },
+                    { id: "position", label: "Position", type: "text" },
+                    { id: "hireDate", label: "Hire Date", type: "date" },
+                    { id: "active", label: "Active", type: "checkbox" }
+                ]
+            },
+            skills: {
+                title: "Skills & Job Types",
+                sections: {
+                    skillsList: {
+                        title: "Skills Management",
+                        type: "list",
+                        itemLabel: "Skill",
+                        fields: [
+                            { id: "skillName", label: "Skill Name", type: "text", required: true },
+                            { id: "category", label: "Category", type: "select",
+                              options: ["Plumbing", "HVAC", "Electrical", "General", "Specialty"] },
+                            { id: "description", label: "Description", type: "text" },
+                            { id: "requiresCert", label: "Requires Certification", type: "checkbox" }
+                        ]
                     },
+                    jobTypes: {
+                        title: "Job Types",
+                        type: "list",
+                        itemLabel: "Job Type",
+                        fields: [
+                            { id: "jobTypeName", label: "Job Type Name", type: "text", required: true },
+                            { id: "category", label: "Category", type: "select",
+                              options: ["Service", "Install", "Maintenance", "Inspection", "Emergency"] },
+                            { id: "businessUnit", label: "Business Unit", type: "text" },
+                            { id: "duration", label: "Typical Duration (hours)", type: "number" },
+                            { id: "requiredSkills", label: "Required Skills", type: "text" },
+                            { id: "active", label: "Active", type: "checkbox" }
+                        ]
+                    }
+                },
                     billing: {
                         title: "Billing Information",
                         fields: [
@@ -660,19 +763,44 @@
             };
             
             Object.keys(journeyStructure).forEach(category => {
-                data[category] = {};
-                Object.keys(journeyStructure[category].sections).forEach(section => {
-                    data[category][section] = {};
-                    journeyStructure[category].sections[section].fields.forEach(field => {
-                        data[category][section][field.id] = {
-                            value: field.type === 'checkbox' ? false : '',
-                            completed: false,
-                            notApplicable: false,
-                            notes: '',
-                            lastUpdated: null
-                        };
+                const categoryData = journeyStructure[category];
+                
+                if (categoryData.type === 'list') {
+                    // For list-type categories (technicians, employees)
+                    data[category] = {
+                        items: [],
+                        lastUpdated: null
+                    };
+                } else if (categoryData.sections) {
+                    // For categories with sections
+                    data[category] = {};
+                    Object.keys(categoryData.sections).forEach(section => {
+                        const sectionData = categoryData.sections[section];
+                        
+                        if (sectionData.type === 'list') {
+                            // For list-type sections
+                            data[category][section] = {
+                                items: [],
+                                lastUpdated: null
+                            };
+                        } else {
+                            // Regular sections
+                            data[category][section] = {};
+                            sectionData.fields.forEach(field => {
+                                data[category][section][field.id] = {
+                                    value: field.type === 'checkbox' ? false : '',
+                                    completed: false,
+                                    notApplicable: false,
+                                    notes: '',
+                                    lastUpdated: null
+                                };
+                            });
+                        }
                     });
-                });
+                } else {
+                    // Regular categories
+                    data[category] = {};
+                }
             });
             
             return data;
@@ -703,6 +831,9 @@
             Object.keys(journeyStructure).forEach(category => {
                 renderTab(category);
             });
+            
+            // Make sure to update progress after rendering
+            updateProgress();
         }
 
         function renderTab(category) {
@@ -710,32 +841,45 @@
             const structure = journeyStructure[category];
             const data = clientData[currentClient]?.[category] || {};
             
-            let html = '<div class="space-y-6">';
-            
-            Object.keys(structure.sections).forEach(sectionKey => {
-                const section = structure.sections[sectionKey];
-                html += `
-                    <div class="border border-gray-200 rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">${section.title}</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                `;
+            if (structure.type === 'list') {
+                // Render list-type categories (technicians, employees)
+                renderListCategory(tabElement, category, structure, data);
+            } else if (structure.sections) {
+                // Render categories with sections
+                let html = '<div class="space-y-6">';
                 
-                section.fields.forEach(field => {
-                    const fieldData = data[sectionKey]?.[field.id] || {
-                        value: field.type === 'checkbox' ? false : '',
-                        completed: false,
-                        notApplicable: false,
-                        notes: ''
-                    };
+                Object.keys(structure.sections).forEach(sectionKey => {
+                    const section = structure.sections[sectionKey];
                     
-                    html += renderField(category, sectionKey, field, fieldData);
+                    if (section.type === 'list') {
+                        // Render list-type sections
+                        html += renderListSection(category, sectionKey, section, data[sectionKey] || { items: [] });
+                    } else {
+                        // Regular sections
+                        html += `
+                            <div class="border border-gray-200 rounded-lg p-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">${section.title}</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        `;
+                        
+                        section.fields.forEach(field => {
+                            const fieldData = data[sectionKey]?.[field.id] || {
+                                value: field.type === 'checkbox' ? false : '',
+                                completed: false,
+                                notApplicable: false,
+                                notes: ''
+                            };
+                            
+                            html += renderField(category, sectionKey, field, fieldData);
+                        });
+                        
+                        html += '</div></div>';
+                    }
                 });
                 
-                html += '</div></div>';
-            });
-            
-            html += '</div>';
-            tabElement.innerHTML = html;
+                html += '</div>';
+                tabElement.innerHTML = html;
+            }
         }
 
         function renderField(category, section, field, fieldData) {
@@ -828,6 +972,323 @@
             return html;
         }
 
+        // ===== LIST RENDERING FUNCTIONS =====
+        function renderListCategory(tabElement, category, structure, data) {
+            const items = data.items || [];
+            let html = `
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">${structure.title}</h2>
+                        <button onclick="addListItem('${category}')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-plus mr-2"></i>Add ${structure.title.slice(0, -1)}
+                        </button>
+                    </div>
+            `;
+            
+            if (items.length === 0) {
+                html += `
+                    <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                        <i class="fas fa-users text-gray-400 text-4xl mb-3"></i>
+                        <p class="text-gray-600">No ${structure.title.toLowerCase()} added yet</p>
+                        <button onclick="addListItem('${category}')" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Add First ${structure.title.slice(0, -1)}
+                        </button>
+                    </div>
+                `;
+            } else {
+                html += '<div class="space-y-4">';
+                items.forEach((item, index) => {
+                    html += renderListItem(category, structure, item, index);
+                });
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            tabElement.innerHTML = html;
+        }
+
+        function renderListSection(category, sectionKey, section, sectionData) {
+            const items = sectionData.items || [];
+            let html = `
+                <div class="border border-gray-200 rounded-lg p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">${section.title}</h3>
+                        <button onclick="addListItem('${category}', '${sectionKey}')" class="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                            <i class="fas fa-plus mr-2"></i>Add ${section.itemLabel || 'Item'}
+                        </button>
+                    </div>
+            `;
+            
+            if (items.length === 0) {
+                html += `
+                    <div class="bg-gray-50 border border-dashed border-gray-300 rounded p-4 text-center text-sm">
+                        <p class="text-gray-600">No ${section.title.toLowerCase()} added yet</p>
+                    </div>
+                `;
+            } else {
+                html += '<div class="space-y-3">';
+                items.forEach((item, index) => {
+                    html += renderSectionListItem(category, sectionKey, section, item, index);
+                });
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        function renderListItem(category, structure, item, index) {
+            const isExpanded = item._expanded !== false;
+            let html = `
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50" onclick="toggleListItem('${category}', ${index})">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'} text-gray-400"></i>
+                            <div>
+                                <div class="font-medium text-gray-900">
+                                    ${item.firstName || 'New'} ${item.lastName || structure.title.slice(0, -1)}
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    ${item.email || 'No email'} ${item.employeeId ? `• ID: ${item.employeeId}` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="event.stopPropagation(); removeListItem('${category}', ${index})" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    
+                    ${isExpanded ? `
+                        <div class="border-t border-gray-200 p-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                ${structure.fields.map(field => renderListField(category, null, field, item, index)).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            return html;
+        }
+
+        function renderSectionListItem(category, sectionKey, section, item, index) {
+            let html = `
+                <div class="bg-gray-50 rounded p-3 border border-gray-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="font-medium text-gray-800">
+                            ${item.skillName || item.jobTypeName || `${section.itemLabel} ${index + 1}`}
+                        </div>
+                        <button onclick="removeListItem('${category}', ${index}, '${sectionKey}')" class="text-red-500 hover:text-red-700 text-sm">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        ${section.fields.map(field => renderListField(category, sectionKey, field, item, index)).join('')}
+                    </div>
+                </div>
+            `;
+            return html;
+        }
+
+        function renderListField(category, section, field, item, itemIndex) {
+            const fieldId = `${category}_${section || 'item'}_${itemIndex}_${field.id}`;
+            const value = item[field.id] || (field.type === 'checkbox' ? false : '');
+            
+            let html = `<div class="${field.type === 'textarea' ? 'md:col-span-2' : ''}">`;
+            html += `<label for="${fieldId}" class="text-sm font-medium text-gray-700 mb-1 block">
+                ${field.label}
+                ${field.required ? '<span class="text-red-500">*</span>' : ''}
+            </label>`;
+            
+            if (field.type === 'checkbox') {
+                html += `
+                    <input type="checkbox" 
+                           id="${fieldId}"
+                           ${value ? 'checked' : ''}
+                           onchange="updateListField('${category}', ${itemIndex}, '${field.id}', this.checked, ${section ? `'${section}'` : null})"
+                           class="w-4 h-4 text-blue-600 rounded">
+                `;
+            } else if (field.type === 'select') {
+                html += `
+                    <select id="${fieldId}"
+                            onchange="updateListField('${category}', ${itemIndex}, '${field.id}', this.value, ${section ? `'${section}'` : null})"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">Select...</option>
+                        ${field.options.map(opt => `
+                            <option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>
+                        `).join('')}
+                    </select>
+                `;
+            } else if (field.type === 'date') {
+                html += `
+                    <input type="date"
+                           id="${fieldId}"
+                           value="${value || ''}"
+                           onchange="updateListField('${category}', ${itemIndex}, '${field.id}', this.value, ${section ? `'${section}'` : null})"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                `;
+            } else if (field.type === 'number') {
+                html += `
+                    <input type="number"
+                           id="${fieldId}"
+                           value="${value || ''}"
+                           onchange="updateListField('${category}', ${itemIndex}, '${field.id}', this.value, ${section ? `'${section}'` : null})"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                `;
+            } else if (field.type === 'multiselect') {
+                // For skills multiselect, we'll use checkboxes for now
+                const selectedSkills = value || [];
+                const availableSkills = getAvailableSkills();
+                html += `
+                    <div class="border border-gray-300 rounded-lg p-2 max-h-32 overflow-y-auto">
+                        ${availableSkills.length > 0 ? 
+                            availableSkills.map(skill => `
+                                <label class="flex items-center space-x-2 py-1">
+                                    <input type="checkbox" 
+                                           ${selectedSkills.includes(skill) ? 'checked' : ''}
+                                           onchange="updateMultiselect('${category}', ${itemIndex}, '${field.id}', '${skill}', this.checked, ${section ? `'${section}'` : null})"
+                                           class="rounded text-blue-600">
+                                    <span class="text-sm">${skill}</span>
+                                </label>
+                            `).join('') :
+                            '<p class="text-sm text-gray-500">Add skills in Skills tab first</p>'
+                        }
+                    </div>
+                `;
+            } else {
+                html += `
+                    <input type="text"
+                           id="${fieldId}"
+                           value="${value || ''}"
+                           onchange="updateListField('${category}', ${itemIndex}, '${field.id}', this.value, ${section ? `'${section}'` : null})"
+                           placeholder="${field.placeholder || ''}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                `;
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        // ===== LIST DATA FUNCTIONS =====
+        function addListItem(category, section = null) {
+            if (!clientData[currentClient]) return;
+            
+            const newItem = { _expanded: true };
+            
+            if (section) {
+                // Adding to a section
+                if (!clientData[currentClient][category][section]) {
+                    clientData[currentClient][category][section] = { items: [] };
+                }
+                clientData[currentClient][category][section].items.push(newItem);
+                clientData[currentClient][category][section].lastUpdated = new Date().toISOString();
+            } else {
+                // Adding to category
+                if (!clientData[currentClient][category]) {
+                    clientData[currentClient][category] = { items: [] };
+                }
+                clientData[currentClient][category].items.push(newItem);
+                clientData[currentClient][category].lastUpdated = new Date().toISOString();
+            }
+            
+            renderTab(category);
+            updateProgress();
+            
+            // Update counts if adding technicians or employees
+            if (category === 'technicians' || category === 'employees') {
+                updateClientInfo();
+            }
+        }
+
+        function removeListItem(category, index, section = null) {
+            if (!clientData[currentClient]) return;
+            
+            if (confirm('Are you sure you want to remove this item?')) {
+                if (section) {
+                    clientData[currentClient][category][section].items.splice(index, 1);
+                    clientData[currentClient][category][section].lastUpdated = new Date().toISOString();
+                } else {
+                    clientData[currentClient][category].items.splice(index, 1);
+                    clientData[currentClient][category].lastUpdated = new Date().toISOString();
+                }
+                
+                renderTab(category);
+                updateProgress();
+                
+                // Update counts if removing technicians or employees
+                if (category === 'technicians' || category === 'employees') {
+                    updateClientInfo();
+                }
+            }
+        }
+
+        function toggleListItem(category, index) {
+            if (!clientData[currentClient]) return;
+            
+            const item = clientData[currentClient][category].items[index];
+            item._expanded = !item._expanded;
+            renderTab(category);
+        }
+
+        function updateListField(category, itemIndex, fieldId, value, section = null) {
+            if (!clientData[currentClient]) return;
+            
+            if (section) {
+                clientData[currentClient][category][section].items[itemIndex][fieldId] = value;
+                clientData[currentClient][category][section].lastUpdated = new Date().toISOString();
+            } else {
+                clientData[currentClient][category].items[itemIndex][fieldId] = value;
+                clientData[currentClient][category].lastUpdated = new Date().toISOString();
+            }
+            
+            // Update display if it's a name field
+            if (fieldId === 'firstName' || fieldId === 'lastName' || fieldId === 'skillName' || fieldId === 'jobTypeName') {
+                renderTab(category);
+            }
+            
+            // Update counts if adding technicians or employees
+            if (category === 'technicians' || category === 'employees') {
+                updateClientInfo();
+            }
+        }
+
+        function updateMultiselect(category, itemIndex, fieldId, value, checked, section = null) {
+            if (!clientData[currentClient]) return;
+            
+            let item;
+            if (section) {
+                item = clientData[currentClient][category][section].items[itemIndex];
+            } else {
+                item = clientData[currentClient][category].items[itemIndex];
+            }
+            
+            if (!item[fieldId]) {
+                item[fieldId] = [];
+            }
+            
+            if (checked) {
+                if (!item[fieldId].includes(value)) {
+                    item[fieldId].push(value);
+                }
+            } else {
+                item[fieldId] = item[fieldId].filter(v => v !== value);
+            }
+            
+            if (section) {
+                clientData[currentClient][category][section].lastUpdated = new Date().toISOString();
+            } else {
+                clientData[currentClient][category].lastUpdated = new Date().toISOString();
+            }
+        }
+
+        function getAvailableSkills() {
+            if (!clientData[currentClient]?.skills?.skillsList?.items) return [];
+            
+            return clientData[currentClient].skills.skillsList.items
+                .map(skill => skill.skillName)
+                .filter(name => name);
+        }
+
         // ===== DATA UPDATES =====
         function updateField(category, section, fieldId, value) {
             if (!clientData[currentClient]) return;
@@ -876,21 +1337,42 @@
             let notApplicable = 0;
             
             Object.keys(journeyStructure).forEach(category => {
-                Object.keys(journeyStructure[category].sections).forEach(section => {
-                    journeyStructure[category].sections[section].fields.forEach(field => {
-                        const fieldData = clientData[currentClient]?.[category]?.[section]?.[field.id];
-                        if (fieldData) {
+                const categoryStructure = journeyStructure[category];
+                
+                if (categoryStructure.type === 'list') {
+                    // For list categories, count having at least one item as completed
+                    total++;
+                    if (clientData[currentClient][category]?.items?.length > 0) {
+                        completed++;
+                    }
+                } else if (categoryStructure.sections) {
+                    Object.keys(categoryStructure.sections).forEach(section => {
+                        const sectionStructure = categoryStructure.sections[section];
+                        
+                        if (sectionStructure.type === 'list') {
+                            // For list sections, count having at least one item as completed
                             total++;
-                            if (fieldData.notApplicable) {
-                                notApplicable++;
-                            } else if (fieldData.completed || fieldData.value) {
+                            if (clientData[currentClient][category]?.[section]?.items?.length > 0) {
                                 completed++;
-                            } else if (fieldData.value === '' && fieldData.notes) {
-                                inProgress++;
                             }
+                        } else {
+                            // Regular sections
+                            sectionStructure.fields.forEach(field => {
+                                const fieldData = clientData[currentClient]?.[category]?.[section]?.[field.id];
+                                if (fieldData) {
+                                    total++;
+                                    if (fieldData.notApplicable) {
+                                        notApplicable++;
+                                    } else if (fieldData.completed || fieldData.value) {
+                                        completed++;
+                                    } else if (fieldData.value === '' && fieldData.notes) {
+                                        inProgress++;
+                                    }
+                                }
+                            });
                         }
                     });
-                });
+                }
             });
             
             const applicableTotal = total - notApplicable;
@@ -917,6 +1399,10 @@
                 data.settings?.tenant?.tenantId?.value || '-';
             document.getElementById('companyDisplay').textContent = 
                 data.settings?.company?.companyName?.value || data.metadata?.companyName || currentClient;
+            document.getElementById('technicianCount').textContent = 
+                data.technicians?.items?.length || 0;
+            document.getElementById('employeeCount').textContent = 
+                data.employees?.items?.length || 0;
             document.getElementById('lastUpdatedDisplay').textContent = 
                 data.metadata?.lastUpdated ? new Date(data.metadata.lastUpdated).toLocaleString() : '-';
         }
@@ -997,6 +1483,12 @@
                 client: currentClient,
                 exportDate: new Date().toISOString(),
                 exportedBy: currentUser.name,
+                summary: {
+                    techniciansCount: clientData[currentClient].technicians?.items?.length || 0,
+                    employeesCount: clientData[currentClient].employees?.items?.length || 0,
+                    skillsCount: clientData[currentClient].skills?.skillsList?.items?.length || 0,
+                    jobTypesCount: clientData[currentClient].skills?.jobTypes?.items?.length || 0
+                },
                 data: clientData[currentClient]
             };
             
