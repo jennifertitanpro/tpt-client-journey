@@ -256,7 +256,7 @@
             // GitHub OAuth App Client ID (public, safe to expose)
             GITHUB_CLIENT_ID: 'Ov23liVgHG3gjkqmbxfS',
             
-            // Your backend OAuth handler URL - UPDATE THIS after deploying to Netlify!
+            // Your backend OAuth handler URL - UPDATED!
             BACKEND_URL: 'https://titan-pro-client-journey.netlify.app/.netlify/functions',
             
             // GitHub organization and repository
@@ -282,70 +282,7 @@
                             { id: "tenantId", label: "Tenant ID", type: "text", required: true },
                             { id: "tenantName", label: "Tenant Name", type: "text", required: true }
                         ]
-                    }
-            },
-            technicians: {
-                title: "Technicians",
-                type: "list",
-                fields: [
-                    { id: "firstName", label: "First Name", type: "text", required: true },
-                    { id: "lastName", label: "Last Name", type: "text", required: true },
-                    { id: "email", label: "Email", type: "text" },
-                    { id: "phone", label: "Phone", type: "text" },
-                    { id: "employeeId", label: "Employee ID", type: "text" },
-                    { id: "role", label: "Role/Title", type: "text" },
-                    { id: "skills", label: "Skills", type: "multiselect", options: [] },
-                    { id: "certifications", label: "Certifications", type: "text" },
-                    { id: "hireDate", label: "Hire Date", type: "date" },
-                    { id: "active", label: "Active", type: "checkbox" }
-                ]
-            },
-            employees: {
-                title: "Employees",
-                type: "list",
-                fields: [
-                    { id: "firstName", label: "First Name", type: "text", required: true },
-                    { id: "lastName", label: "Last Name", type: "text", required: true },
-                    { id: "email", label: "Email", type: "text" },
-                    { id: "phone", label: "Phone", type: "text" },
-                    { id: "employeeId", label: "Employee ID", type: "text" },
-                    { id: "department", label: "Department", type: "select", 
-                      options: ["Office", "Field", "Sales", "Management", "Support"] },
-                    { id: "position", label: "Position", type: "text" },
-                    { id: "hireDate", label: "Hire Date", type: "date" },
-                    { id: "active", label: "Active", type: "checkbox" }
-                ]
-            },
-            skills: {
-                title: "Skills & Job Types",
-                sections: {
-                    skillsList: {
-                        title: "Skills Management",
-                        type: "list",
-                        itemLabel: "Skill",
-                        fields: [
-                            { id: "skillName", label: "Skill Name", type: "text", required: true },
-                            { id: "category", label: "Category", type: "select",
-                              options: ["Plumbing", "HVAC", "Electrical", "General", "Specialty"] },
-                            { id: "description", label: "Description", type: "text" },
-                            { id: "requiresCert", label: "Requires Certification", type: "checkbox" }
-                        ]
                     },
-                    jobTypes: {
-                        title: "Job Types",
-                        type: "list",
-                        itemLabel: "Job Type",
-                        fields: [
-                            { id: "jobTypeName", label: "Job Type Name", type: "text", required: true },
-                            { id: "category", label: "Category", type: "select",
-                              options: ["Service", "Install", "Maintenance", "Inspection", "Emergency"] },
-                            { id: "businessUnit", label: "Business Unit", type: "text" },
-                            { id: "duration", label: "Typical Duration (hours)", type: "number" },
-                            { id: "requiredSkills", label: "Required Skills", type: "text" },
-                            { id: "active", label: "Active", type: "checkbox" }
-                        ]
-                    }
-                },
                     billing: {
                         title: "Billing Information",
                         fields: [
@@ -547,6 +484,83 @@
                               options: ["Disabled", "Enabled"] },
                             { id: "customerPortal", label: "Customer Portal", type: "select",
                               options: ["Disabled", "Enabled"] }
+                        ]
+                    }
+                }
+            },
+            technicians: {
+                title: "Technicians",
+                type: "list",
+                fields: [
+                    { id: "firstName", label: "First Name", type: "text", required: true },
+                    { id: "lastName", label: "Last Name", type: "text", required: true },
+                    { id: "email", label: "Email", type: "text" },
+                    { id: "phone", label: "Phone", type: "text" },
+                    { id: "employeeId", label: "Employee ID", type: "text" },
+                    { id: "role", label: "Role/Title", type: "text" },
+                    { id: "skills", label: "Skills", type: "multiselect", options: [] },
+                    { id: "certifications", label: "Certifications", type: "text" },
+                    { id: "hireDate", label: "Hire Date", type: "date" },
+                    { id: "active", label: "Active", type: "checkbox" }
+                ]
+            },
+            employees: {
+                title: "Employees",
+                type: "list",
+                fields: [
+                    { id: "firstName", label: "First Name", type: "text", required: true },
+                    { id: "lastName", label: "Last Name", type: "text", required: true },
+                    { id: "email", label: "Email", type: "text" },
+                    { id: "phone", label: "Phone", type: "text" },
+                    { id: "employeeId", label: "Employee ID", type: "text" },
+                    { id: "department", label: "Department", type: "select", 
+                      options: ["Office", "Field", "Sales", "Management", "Support"] },
+                    { id: "position", label: "Position", type: "text" },
+                    { id: "hireDate", label: "Hire Date", type: "date" },
+                    { id: "active", label: "Active", type: "checkbox" }
+                ]
+            },
+            skills: {
+                title: "Skills & Job Types",
+                sections: {
+                    skillsList: {
+                        title: "Skills Management",
+                        type: "list",
+                        itemLabel: "Skill",
+                        fields: [
+                            { id: "skillName", label: "Skill Name", type: "text", required: true },
+                            { id: "category", label: "Category", type: "select",
+                              options: ["Plumbing", "HVAC", "Electrical", "General", "Specialty"] },
+                            { id: "description", label: "Description", type: "text" },
+                            { id: "requiresCert", label: "Requires Certification", type: "checkbox" }
+                        ]
+                    },
+                    jobTypes: {
+                        title: "Job Types",
+                        type: "list",
+                        itemLabel: "Job Type",
+                        fields: [
+                            { id: "jobTypeName", label: "Job Type Name", type: "text", required: true },
+                            { id: "category", label: "Category", type: "select",
+                              options: ["Service", "Install", "Maintenance", "Inspection", "Emergency"] },
+                            { id: "businessUnit", label: "Business Unit", type: "text" },
+                            { id: "duration", label: "Typical Duration (hours)", type: "number" },
+                            { id: "requiredSkills", label: "Required Skills", type: "text" },
+                            { id: "active", label: "Active", type: "checkbox" }
+                        ]
+                    }
+                }
+            },
+            zones: {
+                title: "Service Zones",
+                sections: {
+                    zoneConfiguration: {
+                        title: "Zone Setup",
+                        fields: [
+                            { id: "zonesConfigured", label: "Service Zones Configured", type: "checkbox" },
+                            { id: "primaryZone", label: "Primary Service Zone", type: "text" },
+                            { id: "secondaryZones", label: "Secondary Service Zones", type: "textarea",
+                              placeholder: "List secondary zones (one per line)" }
                         ]
                     }
                 }
