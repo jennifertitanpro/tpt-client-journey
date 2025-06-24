@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titan Pro Technologies - Client Journey Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/octokit@3.1.2/dist/octokit.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Main App Container -->
+    <div id="app" class="min-h-screen">
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="mt-4 text-gray-600">Initializing Titan Pro Technologies Platform...</p>
+            </div>
+        </div>
+
+        <!-- Login Screen -->
+        <div id="loginScreen" class="hidden fixed inset-0 bg-gradient-to-br from-blue-600 to-blue-800 z-40 flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Titan Pro Technologies</h1>
+                    <p class="text-gray-600">Client Journey Management Platform</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <button onclick="githubLogin()" class="w-full bg-gray-900 text-white py-3 px-4 rounded-lg hover:bg-gray-800 transition flex items-center justify-center">
+                        <i class="fab fa-github mr-2"></i>
+                        Sign in with GitHub
+                    </button>
+                    
+                    <div class="relative my-6">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-white text-gray-500">Or use demo mode</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="demoLogin('client')" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition">
+                        Continue as Demo Client
+                    </button>
+                    
+                    <button onclick="demoLogin('coach')" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition">
+                        Continue as Demo Coach
+                    </button>
+                </div>
+                
+                <div class="mt-6 text-center text-sm text-gray-600">
+                    <p>Authentication powered by GitHub OAuth</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Application -->
+        <div id="mainApp" class="hidden">
+            <!-- Navigation Header -->
+            <nav class="bg-white shadow-lg sticky top-0 z-30">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between h-16">
+                        <div class="flex items-center">
+                            <h1 class="text-xl font-semibold text-gray-800">Titan Pro Technologies</h1>
+                            <span class="ml-4 px-3 py-1 text-sm rounded-full" id="userRole"></span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-gray-600" id="userName"></span>
+                            <button onclick="logout()" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Client Selector (Coach View Only) -->
+            <div id="clientSelector" class="hidden bg-gray-100 py-4">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center space-x-4">
+                        <label class="text-sm font-medium text-gray-700">Select Client:</label>
+                        <select id="clientDropdown" onchange="loadClientData(this.value)" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Choose a client...</option>
+                        </select>
+                        <button onclick="showAddClientModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                            <i class="fas fa-plus mr-2"></i>Add New Client
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Overview -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Overall Progress -->
+                        <div class="text-center">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Overall Progress</h3>
+                            <div class="relative inline-block">
+                                <svg width="120" height="120" class="progress-ring">
+                                    <circle cx="60" cy="60" r="54" stroke="#e5e7eb" stroke-width="12" fill="none"/>
+                                    <circle id="progressCircle" cx="60" cy="60" r="54" stroke="#3b82f6" stroke-width="12" fill="none"
+                                            stroke-dasharray="339.292" stroke-dashoffset="339.292" stroke-linecap="round"/>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span id="progressPercent" class="text-2xl font-bold text-gray-800">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Stats -->
+                        <div class="space-y-3">
+                            <h3 class="text-lg font-semibold text-gray-700">Status Breakdown</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Completed</span>
+                                    <span id="completedCount" class="text-sm font-semibold text-green-600">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">In Progress</span>
+                                    <span id="inProgressCount" class="text-sm font-semibold text-yellow-600">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Not Started</span>
+                                    <span id="notStartedCount" class="text-sm font-semibold text-gray-600">0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Not Applicable</span>
+                                    <span id="notApplicableCount" class="text-sm font-semibold text-gray-400">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="space-y-3">
+                            <h3 class="text-lg font-semibold text-gray-700">Quick Actions</h3>
+                            <button onclick="exportProgress()" class="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                                <i class="fas fa-download mr-2"></i>Export Progress
+                            </button>
+                            <button onclick="createGitHubIssue()" class="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                                <i class="fab fa-github mr-2"></i>Create GitHub Issue
+                            </button>
+                            <button onclick="viewHistory()" class="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                                <i class="fas fa-history mr-2"></i>View History
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div class="border-b border-gray-200">
+                        <nav class="-mb-px flex overflow-x-auto">
+                            <button onclick="switchTab('general')" class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 whitespace-nowrap active" data-tab="general">
+                                General Settings
+                            </button>
+                            <button onclick="switchTab('people')" class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 whitespace-nowrap" data-tab="people">
+                                People & Payroll
+                            </button>
+                            <button onclick="switchTab('integrations')" class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 whitespace-nowrap" data-tab="integrations">
+                                Integrations
+                            </button>
+                            <button onclick="switchTab('operations')" class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 whitespace-nowrap" data-tab="operations">
+                                Operations
+                            </button>
+                            <button onclick="switchTab('communications')" class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300 whitespace-nowrap" data-tab="communications">
+                                Communications
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="p-6">
+                        <div id="general-tab" class="tab-content active">
+                            <!-- General Settings Content -->
+                        </div>
+                        <div id="people-tab" class="tab-content">
+                            <!-- People & Payroll Content -->
+                        </div>
+                        <div id="integrations-tab" class="tab-content">
+                            <!-- Integrations Content -->
+                        </div>
+                        <div id="operations-tab" class="tab-content">
+                            <!-- Operations Content -->
+                        </div>
+                        <div id="communications-tab" class="tab-content">
+                            <!-- Communications Content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global State
+        let currentUser = null;
+        let currentClient = null;
+        let clientData = {};
+        let octokit = null;
+        
+        // Configuration
+        const CONFIG = {
+            // GitHub OAuth App Client ID (public, safe to expose)
+            GITHUB_CLIENT_ID: 'YOUR_GITHUB_CLIENT_ID', // Replace with your actual Client ID
+            
+            // Your backend OAuth handler URL
+            // For local development: 'http://localhost:3000'
+            // For Netlify: 'https://your-site.netlify.app/.netlify/functions/github-oauth'
+            // For Vercel: 'https://your-site.vercel.app/api/github-oauth'
+            BACKEND_URL: 'http://localhost:3000',
+            
+            // GitHub organization and repository
+            GITHUB_ORG: 'titan-pro-technologies',
+            GITHUB_REPO_OWNER: 'titan-pro-technologies',
+            GITHUB_REPO_NAME: 'client-journeys'
+        };
+        
+        // Data Structure based on the spreadsheet
+        const journeyStructure = {
+            general: {
+                title: "General Settings",
+                sections: {
+                    tenantInfo: {
+                        title: "Tenant Information",
+                        items: [
+                            { id: "tenantId", label: "Tenant ID", type: "text" },
+                            { id: "tenantName", label: "Tenant Name", type: "text" }
+                        ]
+                    },
+                    billing: {
+                        title: "Billing Information",
+                        items: [
+                            { id: "bankConnection", label: "Bank Account Connection", type: "checkbox" }
+                        ]
+                    },
+                    companyProfile: {
+                        title: "Company Profile",
+                        items: [
+                            { id: "companyName", label: "Company Name", type: "text" },
+                            { id: "streetAddress", label: "Street Address", type: "text" },
+                            { id: "city", label: "City", type: "text" },
+                            { id: "state", label: "State", type: "text" },
+                            { id: "zipCode", label: "Zip Code", type: "text" },
+                            { id: "phoneNumber", label: "Phone Number", type: "text" },
+                            { id: "einNumber", label: "EIN Number", type: "text" }
+                        ]
+                    },
+                    customerTypes: {
+                        title: "Customer Types",
+                        items: [
+                            { id: "customerTypes", label: "Customer Types Configuration", type: "checkbox", 
+                              tooltip: "Affects TA recommendations, reporting, marketing, pricing, and workflow automation" }
+                        ]
+                    },
+                    textMessaging: {
+                        title: "Text Messaging",
+                        items: [
+                            { id: "textRegistration", label: "Text Messaging Registration", type: "select", 
+                              options: ["Not Started", "Submitted", "Approved"] },
+                            { id: "optInRequests", label: "Opt-In Requests Configuration", type: "checkbox" }
+                        ]
+                    }
+                }
+            },
+            people: {
+                title: "People & Payroll",
+                sections: {
+                    people: {
+                        title: "People Management",
+                        items: [
+                            { id: "employees", label: "Employees Setup", type: "checkbox" },
+                            { id: "technicians", label: "Technicians Setup", type: "checkbox" },
+                            { id: "skills", label: "Skills Configuration", type: "checkbox" },
+                            { id: "rolePermissions", label: "Role Permissions Setup", type: "checkbox" }
+                        ]
+                    },
+                    payroll: {
+                        title: "Payroll Configuration",
+                        items: [
+                            { id: "timesheetCodes", label: "Timesheet Codes", type: "checkbox" },
+                            { id: "payrollProfile1", label: "Payroll Profile 1", type: "text" },
+                            { id: "payrollProfile2", label: "Payroll Profile 2", type: "text" },
+                            { id: "payrollProfile3", label: "Payroll Profile 3", type: "text" },
+                            { id: "payrollProfile4", label: "Payroll Profile 4", type: "text" }
+                        ]
+                    }
+                }
+            },
+            integrations: {
+                title: "Integrations",
+                sections: {
+                    alerts: {
+                        title: "Alerts",
+                        items: [
+                            { id: "alerts", label: "Alerts Configuration", type: "checkbox" }
+                        ]
+                    },
+                    bookingProviders: {
+                        title: "Booking Providers",
+                        items: [
+                            { id: "angiAds", label: "Angi Ads", type: "checkbox" },
+                            { id: "angiLeads", label: "Angi Leads", type: "checkbox" },
+                            { id: "facebookAds", label: "Facebook Ads", type: "checkbox" },
+                            { id: "wpForms", label: "WP Forms", type: "checkbox" },
+                            { id: "networx", label: "Networx", type: "checkbox" },
+                            { id: "thumbtack", label: "Thumbtack", type: "checkbox" }
+                        ]
+                    },
+                    financing: {
+                        title: "Financing",
+                        items: [
+                            { id: "greenSky", label: "GreenSky", type: "checkbox" },
+                            { id: "turns", label: "Turns", type: "checkbox" },
+                            { id: "goodLeap", label: "GoodLeap", type: "checkbox" },
+                            { id: "wellsFargo", label: "Wells Fargo", type: "checkbox" },
+                            { id: "serviceFinance", label: "Service Finance", type: "checkbox" }
+                        ]
+                    },
+                    other: {
+                        title: "Other Integrations",
+                        items: [
+                            { id: "gps", label: "GPS Integration", type: "checkbox" },
+                            { id: "jobTypeMapping", label: "Job Type Mapping", type: "checkbox" },
+                            { id: "quickbooks", label: "QuickBooks Connected", type: "checkbox" }
+                        ]
+                    }
+                }
+            },
+            operations: {
+                title: "Operations",
+                sections: {
+                    dispatch: {
+                        title: "Dispatch Configuration",
+                        items: [
+                            { id: "dispatchAlerts", label: "Dispatch Alerts", type: "checkbox" },
+                            { id: "clockInOut", label: "Clock In/Out Configuration", type: "select",
+                              options: ["Disabled", "Enabled"] },
+                            { id: "jobConfirmations", label: "Job Confirmations", type: "checkbox" },
+                            { id: "teamsManagement", label: "Teams Management", type: "checkbox" }
+                        ]
+                    },
+                    scheduling: {
+                        title: "Scheduling",
+                        items: [
+                            { id: "arrivalWindows", label: "Arrival Windows", type: "text" },
+                            { id: "businessHours", label: "Business Hours", type: "text" }
+                        ]
+                    },
+                    businessUnits: {
+                        title: "Business Units",
+                        items: [
+                            { id: "businessUnitName", label: "Business Unit Name", type: "text" },
+                            { id: "officialName", label: "Official Name", type: "text" },
+                            { id: "buPhoneNumber", label: "Phone Number", type: "text" },
+                            { id: "trade", label: "Trade", type: "text" },
+                            { id: "division", label: "Division", type: "text" }
+                        ]
+                    },
+                    campaigns: {
+                        title: "Campaigns",
+                        items: [
+                            { id: "callReasons", label: "Call Reasons", type: "checkbox" },
+                            { id: "campaignCategories", label: "Campaign Categories", type: "checkbox" },
+                            { id: "campaigns", label: "Campaigns Setup", type: "checkbox" }
+                        ]
+                    }
+                }
+            },
+            communications: {
+                title: "Communications",
+                sections: {
+                    phones: {
+                        title: "Phone Configuration",
+                        items: [
+                            { id: "callRecording", label: "Call Recording", type: "checkbox" },
+                            { id: "outboundRecording", label: "Outbound Recording", type: "checkbox" },
+                            { id: "emergencyFallback", label: "Emergency Fall Back", type: "checkbox" },
+                            { id: "phoneNumbers", label: "Phone Numbers Ported", type: "checkbox" }
+                        ]
+                    },
+                    chat: {
+                        title: "Chat Configuration",
+                        items: [
+                            { id: "chatPhoneNumber", label: "Chat Phone Number", type: "checkbox" },
+                            { id: "chatPermissions", label: "Chat Permissions", type: "checkbox" },
+                            { id: "chatEnabled", label: "Chat Enabled", type: "checkbox" },
+                            { id: "autoresponder", label: "Autoresponder Setup", type: "checkbox" }
+                        ]
+                    },
+                    notifications: {
+                        title: "Customer Notifications",
+                        items: [
+                            { id: "bookingConfirmations", label: "Booking Confirmations", type: "checkbox" },
+                            { id: "reminderNotifications", label: "Reminder Notifications", type: "checkbox" },
+                            { id: "dispatchNotifications", label: "Dispatch Notifications", type: "checkbox" },
+                            { id: "completionSurveys", label: "Job Completion Surveys", type: "select",
+                              options: ["Disabled", "Enabled"] },
+                            { id: "customerPortal", label: "Customer Portal", type: "select",
+                              options: ["Disabled", "Enabled"] }
+                        ]
+                    }
+                }
+            }
+        };
+        
+        // Initialize the application
+        window.onload = function() {
+            checkAuthentication();
+        };
+        
+        // Authentication Functions
+        function checkAuthentication() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+            
+            if (error) {
+                console.error('GitHub OAuth error:', error);
+                const errorDescription = urlParams.get('error_description');
+                alert(`Authentication failed: ${errorDescription || error}`);
+                showLoginScreen();
+                return;
+            }
+            
+            if (code) {
+                // Show loading state
+                showLoadingMessage('Authenticating with GitHub...');
+                handleGitHubCallback(code);
+            } else {
+                // Check for existing session
+                const savedUser = localStorage.getItem('titanProUser');
+                if (savedUser) {
+                    try {
+                        currentUser = JSON.parse(savedUser);
+                        // Validate token is still valid
+                        if (currentUser.githubToken && currentUser.githubToken !== 'demo-token') {
+                            validateToken(currentUser.githubToken);
+                        } else {
+                            initializeApp();
+                        }
+                    } catch (e) {
+                        console.error('Invalid saved user data:', e);
+                        showLoginScreen();
+                    }
+                } else {
+                    showLoginScreen();
+                }
+            }
+        }
+        
+        function showLoginScreen() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+        
+        function githubLogin() {
+            const redirectUri = window.location.origin + window.location.pathname;
+            const scope = 'repo,read:user,read:org';
+            const state = generateRandomState(); // For security
+            
+            // Save state for verification
+            sessionStorage.setItem('oauth_state', state);
+            
+            const authUrl = `https://github.com/login/oauth/authorize?` +
+                `client_id=${CONFIG.GITHUB_CLIENT_ID}&` +
+                `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+                `scope=${encodeURIComponent(scope)}&` +
+                `state=${state}`;
+            
+            window.location.href = authUrl;
+        }
+        
+        async function handleGitHubCallback(code) {
+            try {
+                // Verify state parameter for security
+                const urlParams = new URLSearchParams(window.location.search);
+                const state = urlParams.get('state');
+                const savedState = sessionStorage.getItem('oauth_state');
+                
+                if (state !== savedState) {
+                    throw new Error('Invalid state parameter - possible CSRF attack');
+                }
+                
+                // Clear state
+                sessionStorage.removeItem('oauth_state');
+                
+                // Exchange code for token
+                const response = await fetch(`${CONFIG.BACKEND_URL}/auth/github/callback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Authentication failed');
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store user data and token
+                    currentUser = {
+                        name: data.user.name,
+                        email: data.user.email,
+                        role: data.user.role,
+                        githubToken: data.access_token,
+                        login: data.user.login,
+                        avatar: data.user.avatar_url
+                    };
+                    
+                    localStorage.setItem('titanProUser', JSON.stringify(currentUser));
+                    
+                    // Initialize Octokit with the token
+                    octokit = new Octokit({ auth: data.access_token });
+                    
+                    // Clear URL parameters
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // Initialize app
+                    initializeApp();
+                } else {
+                    throw new Error(data.error || 'Authentication failed');
+                }
+            } catch (error) {
+                console.error('Error handling GitHub callback:', error);
+                alert(`Authentication failed: ${error.message}`);
+                
+                // Clear URL parameters
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                showLoginScreen();
+            }
+        }
+        
+        // Validate Token
+        async function validateToken(token) {
+            try {
+                const response = await fetch(`${CONFIG.BACKEND_URL}/auth/validate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ token })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.valid) {
+                        // Token is valid, initialize Octokit and app
+                        octokit = new Octokit({ auth: token });
+                        initializeApp();
+                    } else {
+                        throw new Error('Invalid token');
+                    }
+                } else {
+                    throw new Error('Token validation failed');
+                }
+            } catch (error) {
+                console.error('Token validation error:', error);
+                // Token is invalid, clear session and show login
+                localStorage.removeItem('titanProUser');
+                showLoginScreen();
+            }
+        }
+        
+        // Generate Random State for CSRF protection
+        function generateRandomState() {
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+        
+        // Show Loading Message
+        function showLoadingMessage(message) {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const loadingText = loadingScreen.querySelector('p');
+            loadingText.textContent = message;
+            loadingScreen.classList.remove('hidden');
+        }
+        
+        function demoLogin(role) {
+            // Demo login for testing
+            currentUser = {
+                name: role === 'coach' ? 'Demo Coach' : 'Demo Client',
+                email: role === 'coach' ? 'coach@titanpro.com' : 'client@example.com',
+                role: role,
+                githubToken: 'demo-token'
+            };
+            
+            localStorage.setItem('titanProUser', JSON.stringify(currentUser));
+            initializeApp();
+        }
+        
+        function logout() {
+            localStorage.removeItem('titanProUser');
+            currentUser = null;
+            window.location.reload();
+        }
+        
+        // Application Initialization
+        function initializeApp() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Set user info
+            document.getElementById('userName').textContent = currentUser.name;
+            const roleElement = document.getElementById('userRole');
+            roleElement.textContent = currentUser.role.toUpperCase();
+            roleElement.className = currentUser.role === 'coach' 
+                ? 'ml-4 px-3 py-1 text-sm rounded-full bg-green-100 text-green-800'
+                : 'ml-4 px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-800';
+            
+            // Initialize GitHub API client
+            if (currentUser.githubToken && currentUser.githubToken !== 'demo-token') {
+                octokit = new Octokit({ auth: currentUser.githubToken });
+            }
+            
+            // Show client selector for coaches
+            if (currentUser.role === 'coach') {
+                document.getElementById('clientSelector').classList.remove('hidden');
+                loadClientsList(); // This will now load from GitHub if connected
+            } else {
+                // For clients, load their own data
+                currentClient = currentUser.email;
+                loadClientData(currentClient);
+            }
+            
+            // Initialize tabs
+            renderAllTabs();
+        }
+        
+        // Client Management
+        async function loadClientsList() {
+            if (octokit) {
+                // Load from GitHub
+                await loadClientsListFromGitHub();
+            } else {
+                // Demo mode - use sample data
+                const demoClients = [
+                    { id: 'client1@example.com', name: 'ABC Plumbing Co.' },
+                    { id: 'client2@example.com', name: 'XYZ HVAC Services' },
+                    { id: 'client3@example.com', name: 'Quick Fix Electrical' }
+                ];
+                
+                const dropdown = document.getElementById('clientDropdown');
+                dropdown.innerHTML = '<option value="">Choose a client...</option>';
+                demoClients.forEach(client => {
+                    dropdown.innerHTML += `<option value="${client.id}">${client.name}</option>`;
+                });
+            }
+        }
+        
+        async function loadClientsListFromGitHub() {
+            try {
+                showLoadingMessage('Loading clients list...');
+                
+                // List all directories in the clients folder
+                const { data } = await octokit.rest.repos.getContent({
+                    owner: CONFIG.GITHUB_REPO_OWNER,
+                    repo: CONFIG.GITHUB_REPO_NAME,
+                    path: 'clients'
+                });
+                
+                const clients = [];
+                
+                for (const item of data) {
+                    if (item.type === 'dir') {
+                        // Extract client email from directory name
+                        const clientId = item.name.replace('_at_', '@').replace(/_/g, '.');
+                        
+                        try {
+                            // Try to load client metadata
+                            const metadataPath = `${item.path}/metadata.json`;
+                            const { data: metadataFile } = await octokit.rest.repos.getContent({
+                                owner: CONFIG.GITHUB_REPO_OWNER,
+                                repo: CONFIG.GITHUB_REPO_NAME,
+                                path: metadataPath
+                            });
+                            
+                            const metadata = JSON.parse(atob(metadataFile.content));
+                            clients.push({
+                                id: clientId,
+                                name: metadata.companyName || clientId,
+                                ...metadata
+                            });
+                        } catch (e) {
+                            // No metadata file, just use the ID
+                            clients.push({
+                                id: clientId,
+                                name: clientId
+                            });
+                        }
+                    }
+                }
+                
+                // Update dropdown
+                const dropdown = document.getElementById('clientDropdown');
+                dropdown.innerHTML = '<option value="">Choose a client...</option>';
+                clients.forEach(client => {
+                    dropdown.innerHTML += `<option value="${client.id}">${client.name}</option>`;
+                });
+                
+                document.getElementById('loadingScreen').classList.add('hidden');
+                
+            } catch (error) {
+                console.error('Error loading clients from GitHub:', error);
+                document.getElementById('loadingScreen').classList.add('hidden');
+                // Fall back to demo data
+                await loadClientsList();
+            }
+        }
+        
+        function loadClientData(clientId) {
+            if (!clientId) return;
+            
+            currentClient = clientId;
+            
+            // Show loading state
+            showLoadingMessage(`Loading data for ${clientId}...`);
+            
+            // Load from GitHub or localStorage
+            loadClientDataFromGitHub(clientId).then(() => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                updateProgressDisplay();
+                renderAllTabs();
+            });
+        }
+        
+        async function loadClientDataFromGitHub(clientId) {
+            if (!octokit) {
+                // Load from localStorage if no GitHub connection
+                const localData = localStorage.getItem(`titanPro_${clientId}`);
+                if (localData) {
+                    clientData[clientId] = JSON.parse(localData);
+                } else {
+                    clientData[clientId] = createEmptyClientData();
+                }
+                return;
+            }
+            
+            try {
+                const path = `clients/${clientId.replace('@', '_at_').replace(/[^a-zA-Z0-9_-]/g, '_')}/journey.json`;
+                
+                const { data } = await octokit.rest.repos.getContent({
+                    owner: CONFIG.GITHUB_REPO_OWNER,
+                    repo: CONFIG.GITHUB_REPO_NAME,
+                    path: path
+                });
+                
+                // Decode content
+                const content = decodeURIComponent(escape(atob(data.content)));
+                clientData[clientId] = JSON.parse(content);
+                
+                // Save to localStorage as cache
+                localStorage.setItem(`titanPro_${clientId}`, content);
+                
+                console.log('Client data loaded from GitHub');
+                showNotification('Client data loaded successfully', 'success');
+                
+            } catch (error) {
+                if (error.status === 404) {
+                    // File doesn't exist, create new data
+                    console.log('No existing data found, creating new client data');
+                    clientData[clientId] = createEmptyClientData();
+                    showNotification('Created new client journey', 'info');
+                } else {
+                    console.error('Error loading from GitHub:', error);
+                    
+                    // Try to load from localStorage
+                    const localData = localStorage.getItem(`titanPro_${clientId}`);
+                    if (localData) {
+                        clientData[clientId] = JSON.parse(localData);
+                        showNotification('Loaded from local cache', 'info');
+                    } else {
+                        clientData[clientId] = createEmptyClientData();
+                        showNotification('Created new client journey (offline)', 'warning');
+                    }
+                }
+            }
+        }
+        
+        function createEmptyClientData() {
+            const data = {};
+            Object.keys(journeyStructure).forEach(category => {
+                data[category] = {};
+                Object.keys(journeyStructure[category].sections).forEach(section => {
+                    data[category][section] = {};
+                    journeyStructure[category].sections[section].items.forEach(item => {
+                        data[category][section][item.id] = {
+                            value: item.type === 'checkbox' ? false : '',
+                            status: 'notStarted',
+                            notApplicable: false,
+                            notes: '',
+                            lastUpdated: null,
+                            updatedBy: null
+                        };
+                    });
+                });
+            });
+            return data;
+        }
+        
+        // Tab Management
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.add('active', 'text-blue-600', 'border-blue-600');
+                    btn.classList.remove('text-gray-500', 'border-transparent');
+                } else {
+                    btn.classList.remove('active', 'text-blue-600', 'border-blue-600');
+                    btn.classList.add('text-gray-500', 'border-transparent');
+                }
+            });
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+        
+        // Render Functions
+        function renderAllTabs() {
+            if (!currentClient) return;
+            
+            Object.keys(journeyStructure).forEach(category => {
+                renderTab(category);
+            });
+        }
+        
+        function renderTab(category) {
+            const tabElement = document.getElementById(`${category}-tab`);
+            const structure = journeyStructure[category];
+            const data = clientData[currentClient]?.[category] || {};
+            
+            let html = '<div class="space-y-6">';
+            
+            Object.keys(structure.sections).forEach(sectionKey => {
+                const section = structure.sections[sectionKey];
+                html += renderSection(category, sectionKey, section, data[sectionKey] || {});
+            });
+            
+            html += '</div>';
+            tabElement.innerHTML = html;
+        }
+        
+        function renderSection(category, sectionKey, section, sectionData) {
+            let html = `
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">${section.title}</h3>
+                    <div class="space-y-3">
+            `;
+            
+            section.items.forEach(item => {
+                const itemData = sectionData[item.id] || {
+                    value: item.type === 'checkbox' ? false : '',
+                    status: 'notStarted',
+                    notApplicable: false,
+                    notes: ''
+                };
+                
+                html += renderItem(category, sectionKey, item, itemData);
+            });
+            
+            html += '</div></div>';
+            return html;
+        }
+        
+        function renderItem(category, sectionKey, item, itemData) {
+            const isCoach = currentUser.role === 'coach';
+            const isDisabled = itemData.notApplicable;
+            const itemId = `${category}_${sectionKey}_${item.id}`;
+            
+            let statusClass = 'bg-gray-100';
+            if (itemData.notApplicable) statusClass = 'bg-gray-50 opacity-50';
+            else if (itemData.status === 'completed') statusClass = 'bg-green-50';
+            else if (itemData.status === 'inProgress') statusClass = 'bg-yellow-50';
+            
+            let html = `<div class="p-3 rounded-lg ${statusClass} ${isDisabled ? 'opacity-60' : ''}">`;
+            
+            // Item header with status and N/A checkbox
+            html += `
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                        <label class="font-medium text-gray-700 ${isDisabled ? 'line-through' : ''}">${item.label}</label>
+                        ${item.tooltip ? `
+                            <div class="tooltip-container relative">
+                                <i class="fas fa-info-circle text-gray-400 text-sm cursor-help"></i>
+                                <div class="tooltip absolute left-0 top-6 bg-gray-800 text-white text-xs rounded p-2 w-64 z-10">
+                                    ${item.tooltip}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        ${isCoach ? `
+                            <label class="flex items-center space-x-1 text-sm">
+                                <input type="checkbox" 
+                                       id="${itemId}_na"
+                                       ${itemData.notApplicable ? 'checked' : ''}
+                                       onchange="toggleNotApplicable('${category}', '${sectionKey}', '${item.id}')"
+                                       class="rounded text-gray-600">
+                                <span class="text-gray-600">N/A</span>
+                            </label>
+                        ` : ''}
+                        <select id="${itemId}_status"
+                                onchange="updateItemStatus('${category}', '${sectionKey}', '${item.id}', this.value)"
+                                ${isDisabled ? 'disabled' : ''}
+                                class="text-sm border-gray-300 rounded px-2 py-1">
+                            <option value="notStarted" ${itemData.status === 'notStarted' ? 'selected' : ''}>Not Started</option>
+                            <option value="inProgress" ${itemData.status === 'inProgress' ? 'selected' : ''}>In Progress</option>
+                            <option value="completed" ${itemData.status === 'completed' ? 'selected' : ''}>Completed</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            
+            // Item input based on type
+            if (!isDisabled) {
+                if (item.type === 'checkbox') {
+                    html += `
+                        <input type="checkbox" 
+                               id="${itemId}"
+                               ${itemData.value ? 'checked' : ''}
+                               onchange="updateItemValue('${category}', '${sectionKey}', '${item.id}', this.checked)"
+                               class="rounded text-blue-600">
+                    `;
+                } else if (item.type === 'select') {
+                    html += `
+                        <select id="${itemId}"
+                                onchange="updateItemValue('${category}', '${sectionKey}', '${item.id}', this.value)"
+                                class="w-full border-gray-300 rounded px-3 py-2">
+                            <option value="">Select...</option>
+                            ${item.options.map(opt => `
+                                <option value="${opt}" ${itemData.value === opt ? 'selected' : ''}>${opt}</option>
+                            `).join('')}
+                        </select>
+                    `;
+                } else {
+                    html += `
+                        <input type="text" 
+                               id="${itemId}"
+                               value="${itemData.value || ''}"
+                               onchange="updateItemValue('${category}', '${sectionKey}', '${item.id}', this.value)"
+                               placeholder="Enter ${item.label.toLowerCase()}"
+                               class="w-full border-gray-300 rounded px-3 py-2">
+                    `;
+                }
+                
+                // Notes section
+                html += `
+                    <div class="mt-2">
+                        <textarea id="${itemId}_notes"
+                                  placeholder="Add notes..."
+                                  onchange="updateItemNotes('${category}', '${sectionKey}', '${item.id}', this.value)"
+                                  class="w-full border-gray-300 rounded px-3 py-2 text-sm h-16">${itemData.notes || ''}</textarea>
+                    </div>
+                `;
+            }
+            
+            // Last updated info
+            if (itemData.lastUpdated) {
+                html += `
+                    <div class="text-xs text-gray-500 mt-2">
+                        Last updated: ${new Date(itemData.lastUpdated).toLocaleDateString()} by ${itemData.updatedBy}
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            return html;
+        }
+        
+        // Update Functions
+        function updateItemValue(category, section, itemId, value) {
+            if (!clientData[currentClient]) {
+                clientData[currentClient] = createEmptyClientData();
+            }
+            
+            clientData[currentClient][category][section][itemId].value = value;
+            clientData[currentClient][category][section][itemId].lastUpdated = new Date().toISOString();
+            clientData[currentClient][category][section][itemId].updatedBy = currentUser.name;
+            
+            // Auto-update status if value is provided
+            if (value && clientData[currentClient][category][section][itemId].status === 'notStarted') {
+                clientData[currentClient][category][section][itemId].status = 'inProgress';
+                renderTab(category);
+            }
+            
+            saveToGitHub();
+            updateProgressDisplay();
+        }
+        
+        function updateItemStatus(category, section, itemId, status) {
+            if (!clientData[currentClient]) {
+                clientData[currentClient] = createEmptyClientData();
+            }
+            
+            clientData[currentClient][category][section][itemId].status = status;
+            clientData[currentClient][category][section][itemId].lastUpdated = new Date().toISOString();
+            clientData[currentClient][category][section][itemId].updatedBy = currentUser.name;
+            
+            saveToGitHub();
+            updateProgressDisplay();
+            renderTab(category);
+        }
+        
+        function updateItemNotes(category, section, itemId, notes) {
+            if (!clientData[currentClient]) {
+                clientData[currentClient] = createEmptyClientData();
+            }
+            
+            clientData[currentClient][category][section][itemId].notes = notes;
+            clientData[currentClient][category][section][itemId].lastUpdated = new Date().toISOString();
+            clientData[currentClient][category][section][itemId].updatedBy = currentUser.name;
+            
+            saveToGitHub();
+        }
+        
+        function toggleNotApplicable(category, section, itemId) {
+            if (currentUser.role !== 'coach') return;
+            
+            if (!clientData[currentClient]) {
+                clientData[currentClient] = createEmptyClientData();
+            }
+            
+            const isNA = !clientData[currentClient][category][section][itemId].notApplicable;
+            clientData[currentClient][category][section][itemId].notApplicable = isNA;
+            clientData[currentClient][category][section][itemId].lastUpdated = new Date().toISOString();
+            clientData[currentClient][category][section][itemId].updatedBy = currentUser.name;
+            
+            if (isNA) {
+                clientData[currentClient][category][section][itemId].status = 'notApplicable';
+            }
+            
+            saveToGitHub();
+            updateProgressDisplay();
+            renderTab(category);
+        }
+        
+        // Progress Calculation
+        function updateProgressDisplay() {
+            if (!currentClient || !clientData[currentClient]) return;
+            
+            let total = 0;
+            let completed = 0;
+            let inProgress = 0;
+            let notStarted = 0;
+            let notApplicable = 0;
+            
+            Object.keys(journeyStructure).forEach(category => {
+                Object.keys(journeyStructure[category].sections).forEach(section => {
+                    journeyStructure[category].sections[section].items.forEach(item => {
+                        const itemData = clientData[currentClient]?.[category]?.[section]?.[item.id];
+                        if (itemData) {
+                            total++;
+                            if (itemData.notApplicable) {
+                                notApplicable++;
+                            } else if (itemData.status === 'completed') {
+                                completed++;
+                            } else if (itemData.status === 'inProgress') {
+                                inProgress++;
+                            } else {
+                                notStarted++;
+                            }
+                        } else {
+                            total++;
+                            notStarted++;
+                        }
+                    });
+                });
+            });
+            
+            // Calculate percentage (excluding N/A items)
+            const applicableTotal = total - notApplicable;
+            const percentage = applicableTotal > 0 ? Math.round((completed / applicableTotal) * 100) : 0;
+            
+            // Update UI
+            document.getElementById('progressPercent').textContent = `${percentage}%`;
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('inProgressCount').textContent = inProgress;
+            document.getElementById('notStartedCount').textContent = notStarted;
+            document.getElementById('notApplicableCount').textContent = notApplicable;
+            
+            // Update progress circle
+            const circle = document.getElementById('progressCircle');
+            const circumference = 2 * Math.PI * 54;
+            const offset = circumference - (percentage / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+        
+        // GitHub Integration
+        async function saveToGitHub() {
+            if (!octokit || !currentClient) {
+                console.log('Saving to local storage only (no GitHub connection)');
+                localStorage.setItem(`titanPro_${currentClient}`, JSON.stringify(clientData[currentClient]));
+                return;
+            }
+            
+            try {
+                const path = `clients/${currentClient.replace('@', '_at_').replace(/[^a-zA-Z0-9_-]/g, '_')}/journey.json`;
+                const content = btoa(unescape(encodeURIComponent(JSON.stringify(clientData[currentClient], null, 2))));
+                
+                // Get current file (if exists) to get SHA
+                let sha;
+                try {
+                    const { data } = await octokit.rest.repos.getContent({
+                        owner: CONFIG.GITHUB_REPO_OWNER,
+                        repo: CONFIG.GITHUB_REPO_NAME,
+                        path: path
+                    });
+                    sha = data.sha;
+                } catch (e) {
+                    if (e.status !== 404) {
+                        throw e; // Re-throw if not a 404 error
+                    }
+                    // File doesn't exist yet, which is fine
+                }
+                
+                // Create or update file
+                const response = await octokit.rest.repos.createOrUpdateFileContents({
+                    owner: CONFIG.GITHUB_REPO_OWNER,
+                    repo: CONFIG.GITHUB_REPO_NAME,
+                    path: path,
+                    message: `Update journey data for ${currentClient} - ${new Date().toISOString()}`,
+                    content: content,
+                    sha: sha,
+                    author: {
+                        name: currentUser.name || currentUser.login,
+                        email: currentUser.email || `${currentUser.login}@users.noreply.github.com`
+                    }
+                });
+                
+                console.log('Data saved to GitHub successfully');
+                showNotification('Changes saved to GitHub', 'success');
+                
+                // Also save to localStorage as backup
+                localStorage.setItem(`titanPro_${currentClient}`, JSON.stringify(clientData[currentClient]));
+                
+            } catch (error) {
+                console.error('Error saving to GitHub:', error);
+                
+                // Handle specific error cases
+                if (error.status === 401) {
+                    alert('Your GitHub session has expired. Please log in again.');
+                    logout();
+                } else if (error.status === 403) {
+                    alert('You do not have permission to save to this repository.');
+                } else if (error.status === 404) {
+                    alert('Repository not found. Please check the configuration.');
+                } else {
+                    // Save to localStorage as fallback
+                    localStorage.setItem(`titanPro_${currentClient}`, JSON.stringify(clientData[currentClient]));
+                    showNotification('Saved locally (GitHub sync failed)', 'warning');
+                }
+            }
+        }
+        
+        // Notification System
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed bottom-4 right-4 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-y-0 opacity-100 z-50`;
+            
+            // Set color based on type
+            switch(type) {
+                case 'success':
+                    notification.className += ' bg-green-500 text-white';
+                    break;
+                case 'error':
+                    notification.className += ' bg-red-500 text-white';
+                    break;
+                case 'warning':
+                    notification.className += ' bg-yellow-500 text-white';
+                    break;
+                default:
+                    notification.className += ' bg-blue-500 text-white';
+            }
+            
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+        
+        // Export Functions
+        function exportProgress() {
+            if (!currentClient || !clientData[currentClient]) return;
+            
+            const exportData = {
+                client: currentClient,
+                exportDate: new Date().toISOString(),
+                exportedBy: currentUser.name,
+                progress: calculateDetailedProgress(),
+                data: clientData[currentClient]
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `titan-pro-journey-${currentClient}-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function calculateDetailedProgress() {
+            const progress = {};
+            
+            Object.keys(journeyStructure).forEach(category => {
+                progress[category] = {
+                    total: 0,
+                    completed: 0,
+                    inProgress: 0,
+                    notStarted: 0,
+                    notApplicable: 0
+                };
+                
+                Object.keys(journeyStructure[category].sections).forEach(section => {
+                    journeyStructure[category].sections[section].items.forEach(item => {
+                        const itemData = clientData[currentClient]?.[category]?.[section]?.[item.id];
+                        progress[category].total++;
+                        
+                        if (itemData?.notApplicable) {
+                            progress[category].notApplicable++;
+                        } else if (itemData?.status === 'completed') {
+                            progress[category].completed++;
+                        } else if (itemData?.status === 'inProgress') {
+                            progress[category].inProgress++;
+                        } else {
+                            progress[category].notStarted++;
+                        }
+                    });
+                });
+            });
+            
+            return progress;
+        }
+        
+        // GitHub Issue Creation
+        async function createGitHubIssue() {
+            if (!currentClient) {
+                alert('Please select a client first');
+                return;
+            }
+            
+            if (!octokit) {
+                alert('GitHub integration is not available in demo mode');
+                return;
+            }
+            
+            const title = prompt('Issue title:', `Journey Update Request for ${currentClient}`);
+            if (!title) return;
+            
+            const body = prompt('Issue description:', 'Please describe what needs to be updated or reviewed.');
+            if (!body) return;
+            
+            try {
+                showLoadingMessage('Creating GitHub issue...');
+                
+                // Get current progress stats
+                const progress = calculateDetailedProgress();
+                const stats = getProgressStats();
+                
+                const issueBody = `
+**Client:** ${currentClient}
+**Reported by:** ${currentUser.name} (${currentUser.role})
+**Date:** ${new Date().toLocaleString()}
+**Overall Progress:** ${stats.percentage}%
+
+## Description
+${body}
+
+## Current Status
+- General Settings: ${progress.general.completed}/${progress.general.total - progress.general.notApplicable} completed
+- People & Payroll: ${progress.people.completed}/${progress.people.total - progress.people.notApplicable} completed
+- Integrations: ${progress.integrations.completed}/${progress.integrations.total - progress.integrations.notApplicable} completed
+- Operations: ${progress.operations.completed}/${progress.operations.total - progress.operations.notApplicable} completed
+- Communications: ${progress.communications.completed}/${progress.communications.total - progress.communications.notApplicable} completed
+
+## Next Steps
+_To be filled by the coach_
+
+---
+[View Client Journey](${window.location.href})
+                `;
+                
+                const issue = await octokit.rest.issues.create({
+                    owner: CONFIG.GITHUB_REPO_OWNER,
+                    repo: CONFIG.GITHUB_REPO_NAME,
+                    title: title,
+                    body: issueBody,
+                    labels: ['client-journey', currentUser.role, 'status-update'],
+                    assignees: currentUser.role === 'client' ? [] : [currentUser.login]
+                });
+                
+                document.getElementById('loadingScreen').classList.add('hidden');
+                
+                alert(`Issue created successfully! Issue #${issue.data.number}\n\nView at: ${issue.data.html_url}`);
+                
+                // Optionally open the issue in a new tab
+                if (confirm('Would you like to open the issue in GitHub?')) {
+                    window.open(issue.data.html_url, '_blank');
+                }
+                
+            } catch (error) {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                console.error('Error creating issue:', error);
+                
+                if (error.status === 404) {
+                    alert('Repository not found. Please check the configuration.');
+                } else if (error.status === 403) {
+                    alert('You do not have permission to create issues in this repository.');
+                } else {
+                    alert('Error creating issue. Please try again.');
+                }
+            }
+        }
+        
+        // Get progress stats helper
+        function getProgressStats() {
+            if (!currentClient || !clientData[currentClient]) {
+                return { percentage: 0, completed: 0, total: 0 };
+            }
+            
+            let total = 0;
+            let completed = 0;
+            let notApplicable = 0;
+            
+            Object.keys(journeyStructure).forEach(category => {
+                Object.keys(journeyStructure[category].sections).forEach(section => {
+                    journeyStructure[category].sections[section].items.forEach(item => {
+                        const itemData = clientData[currentClient]?.[category]?.[section]?.[item.id];
+                        if (itemData) {
+                            total++;
+                            if (itemData.notApplicable) {
+                                notApplicable++;
+                            } else if (itemData.status === 'completed') {
+                                completed++;
+                            }
+                        } else {
+                            total++;
+                        }
+                    });
+                });
+            });
+            
+            const applicableTotal = total - notApplicable;
+            const percentage = applicableTotal > 0 ? Math.round((completed / applicableTotal) * 100) : 0;
+            
+            return { percentage, completed, total: applicableTotal };
+        }
+        
+        // View History (placeholder)
+        function viewHistory() {
+            alert('History view would show commit history from GitHub repository for this client\'s journey data.');
+        }
+        
+        // Add New Client Modal
+        async function showAddClientModal() {
+            const clientEmail = prompt('Enter new client email:');
+            if (!clientEmail) return;
+            
+            const clientName = prompt('Enter client company name:');
+            if (!clientName) return;
+            
+            if (octokit) {
+                try {
+                    showLoadingMessage('Creating new client...');
+                    
+                    const clientDir = clientEmail.replace('@', '_at_').replace(/[^a-zA-Z0-9_-]/g, '_');
+                    
+                    // Create metadata file
+                    const metadata = {
+                        email: clientEmail,
+                        companyName: clientName,
+                        createdAt: new Date().toISOString(),
+                        createdBy: currentUser.name,
+                        status: 'active'
+                    };
+                    
+                    await octokit.rest.repos.createOrUpdateFileContents({
+                        owner: CONFIG.GITHUB_REPO_OWNER,
+                        repo: CONFIG.GITHUB_REPO_NAME,
+                        path: `clients/${clientDir}/metadata.json`,
+                        message: `Create new client: ${clientName}`,
+                        content: btoa(JSON.stringify(metadata, null, 2))
+                    });
+                    
+                    // Create empty journey data
+                    const emptyJourney = createEmptyClientData();
+                    await octokit.rest.repos.createOrUpdateFileContents({
+                        owner: CONFIG.GITHUB_REPO_OWNER,
+                        repo: CONFIG.GITHUB_REPO_NAME,
+                        path: `clients/${clientDir}/journey.json`,
+                        message: `Initialize journey for ${clientName}`,
+                        content: btoa(JSON.stringify(emptyJourney, null, 2))
+                    });
+                    
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    showNotification(`Client "${clientName}" created successfully!`, 'success');
+                    
+                    // Refresh client list
+                    await loadClientsList();
+                    
+                    // Auto-select the new client
+                    document.getElementById('clientDropdown').value = clientEmail;
+                    loadClientData(clientEmail);
+                    
+                } catch (error) {
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    console.error('Error creating client:', error);
+                    alert('Error creating client. Please ensure you have write access to the repository.');
+                }
+            } else {
+                // Demo mode
+                alert(`New client "${clientName}" (${clientEmail}) would be created in the system.`);
+                loadClientsList();
+            }
+        }
+    </script>
+</body>
+</html>
