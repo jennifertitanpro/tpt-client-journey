@@ -224,20 +224,17 @@
         
         // Configuration
         const CONFIG = {
-            // GitHub OAuth App Client ID (public, safe to expose)
-            GITHUB_CLIENT_ID: 'YOUR_GITHUB_CLIENT_ID', // Replace with your actual Client ID
-            
-            // Your backend OAuth handler URL
-            // For local development: 'http://localhost:3000'
-            // For Netlify: 'https://your-site.netlify.app/.netlify/functions/github-oauth'
-            // For Vercel: 'https://your-site.vercel.app/api/github-oauth'
-            BACKEND_URL: 'http://localhost:3000',
-            
-            // GitHub organization and repository
-            GITHUB_ORG: 'titan-pro-technologies',
-            GITHUB_REPO_OWNER: 'titan-pro-technologies',
-            GITHUB_REPO_NAME: 'client-journeys'
-        };
+    // GitHub OAuth App Client ID (public, safe to expose)
+    GITHUB_CLIENT_ID: 'your-actual-client-id-here',
+    
+    // Your backend OAuth handler URL
+    BACKEND_URL: 'https://titan-pro-journeys.netlify.app/.netlify/functions',
+    
+    // GitHub organization and repository
+    GITHUB_ORG: 'jennifertitanpro',
+    GITHUB_REPO_OWNER: 'jennifertitanpro',
+    GITHUB_REPO_NAME: 'client-journeys'
+};
         
         // Data Structure based on the spreadsheet
         const journeyStructure = {
