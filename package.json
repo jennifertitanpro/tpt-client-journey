@@ -1,0 +1,20 @@
+{
+  "name": "tpt-client-journey",
+  "version": "1.0.0",
+  "description": "ServiceTitan Client Journey Management Platform for Titan Pro Technologies",
+  "author": "Titan Pro Technologies",
+  "license": "Private",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jennifertitanpro/tpt-client-journey.git"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "keywords": [
+    "servicetitan",
+    "client-management",
+    "journey-tracking",
+    "titan-pro"
+  ]
+}
