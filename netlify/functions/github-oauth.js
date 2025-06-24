@@ -1,170 +1,60 @@
-const axios = require('axios');
-
 exports.handler = async (event, context) => {
-  // CORS headers - allow your frontend domain
-  const headers = {
-    'Access-Control-Allow-Origin': process.env.FRONTEND_URL || '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json'
-  };
-
-  // Handle preflight OPTIONS request
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    };
-  }
-
-  // Only allow POST requests
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  const { code } = JSON.parse(event.body);
+  
   try {
-    // Parse the request body
-    const { code } = JSON.parse(event.body);
-
-    if (!code) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'No authorization code provided' })
-      };
-    }
-
-    console.log('Exchanging code for access token...');
-
-    // Exchange the code for an access token
-    const tokenResponse = await axios.post(
-      'https://github.com/login/oauth/access_token',
-      {
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
         client_id: process.env.GITHUB_CLIENT_ID,
         client_secret: process.env.GITHUB_CLIENT_SECRET,
         code: code
-      },
-      {
-        headers: {
-          Accept: 'application/json'
-        }
-      }
-    );
+      })
+    });
 
-    const { access_token, error, error_description } = tokenResponse.data;
+    const tokenData = await tokenResponse.json();
 
-    if (error) {
-      console.error('GitHub OAuth error:', error, error_description);
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: error,
-          error_description: error_description 
-        })
-      };
-    }
-
-    if (!access_token) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'No access token received from GitHub' })
-      };
-    }
-
-    console.log('Successfully got access token, fetching user info...');
-
-    // Get user information
-    const userResponse = await axios.get('https://api.github.com/user', {
+    // Get user info
+    const userResponse = await fetch('https://api.github.com/user', {
       headers: {
-        Authorization: `Bearer ${access_token}`,
-        Accept: 'application/vnd.github.v3+json'
+        'Authorization': `token ${tokenData.access_token}`
       }
     });
 
-    const userData = userResponse.data;
-    console.log('Got user data:', userData.login);
+    const userData = await userResponse.json();
 
-    // Determine user role by checking organization membership
-    let role = 'client'; // Default role
-    
-    // Check if the organization name is configured
-    const orgName = process.env.GITHUB_ORG_NAME || 'titan-pro-technologies';
-    
-    if (orgName) {
-      try {
-        // Check if user is a member of the organization
-        const orgResponse = await axios.get(
-          `https://api.github.com/orgs/${orgName}/members/${userData.login}`,
-          {
-            headers: {
-              Authorization: `Bearer ${access_token}`,
-              Accept: 'application/vnd.github.v3+json'
-            }
-          }
-        );
-        
-        // If we get a 204 response, user is a member
-        if (orgResponse.status === 204) {
-          role = 'coach';
-          console.log('User is a coach (org member)');
-        }
-      } catch (orgError) {
-        // 404 means not a member, which is fine - they're a client
-        if (orgError.response && orgError.response.status === 404) {
-          console.log('User is a client (not org member)');
-        } else {
-          console.error('Error checking org membership:', orgError.message);
-        }
+    // Check if user is in your organization
+    const orgResponse = await fetch('https://api.github.com/orgs/titan-pro-technologies/members/' + userData.login, {
+      headers: {
+        'Authorization': `token ${tokenData.access_token}`
       }
-    }
+    });
 
-    // Return the user data and access token
+    const role = orgResponse.status === 204 ? 'coach' : 'client';
+
     return {
       statusCode: 200,
-      headers,
       body: JSON.stringify({
         success: true,
+        access_token: tokenData.access_token,
         user: {
-          login: userData.login,
-          name: userData.name,
-          email: userData.email,
-          avatar_url: userData.avatar_url,
+          ...userData,
           role: role
-        },
-        access_token: access_token
+        }
       })
     };
-
   } catch (error) {
-    console.error('OAuth handler error:', error.message);
-    
-    // Check for specific error types
-    if (error.response) {
-      console.error('Response error:', error.response.data);
-      return {
-        statusCode: error.response.status,
-        headers,
-        body: JSON.stringify({ 
-          error: 'GitHub API error',
-          details: error.response.data 
-        })
-      };
-    }
-    
     return {
       statusCode: 500,
-      headers,
-      body: JSON.stringify({ 
-        error: 'Internal server error',
-        details: error.message 
-      })
+      body: JSON.stringify({ success: false, error: error.message })
     };
   }
 };
