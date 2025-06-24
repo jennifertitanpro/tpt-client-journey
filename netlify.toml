@@ -1,0 +1,27 @@
+[build]
+  # Directory with serverless functions
+  functions = "netlify/functions"
+
+[functions]
+  # Use esbuild for faster builds
+  node_bundler = "esbuild"
+
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-XSS-Protection = "1; mode=block"
+
+# Redirect rules (optional)
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Function configuration
+[functions."github-oauth"]
+  # Allow longer execution time for OAuth
+  timeout = 10
