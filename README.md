@@ -1,154 +1,133 @@
-# TPT Client Journey - ServiceTitan Implementation Platform
+# TPT Client Journey - Complete Setup Guide
 
-A comprehensive web-based platform for tracking and managing ServiceTitan implementation journeys for Titan Pro Technologies clients.
+## Step 1: Create GitHub OAuth App
 
-## 🌟 Features
+1. Go to GitHub → Settings → Developer settings → OAuth Apps
+2. Click "New OAuth App"
+3. Fill in the following:
+   - **Application name**: TPT Client Journey
+   - **Homepage URL**: https://titan-pro-client-journey.netlify.app
+   - **Authorization callback URL**: https://titan-pro-client-journey.netlify.app
+4. Click "Register application"
+5. Save the **Client ID** (you'll see it immediately)
+6. Click "Generate a new client secret" and save the **Client Secret** (you'll only see it once!)
 
-- **Role-Based Access**: Automatic role assignment based on organization membership
-- **Progress Tracking**: Visual progress indicators with completion percentages
-- **GitHub Integration**: All data stored securely in GitHub
-- **Real-Time Updates**: Changes save automatically to GitHub
-- **Comprehensive Forms**: Complete ServiceTitan onboarding checklist
-- **Not Applicable Options**: Coaches can mark items as N/A
-- **Export Functionality**: Export client data as JSON
+## Step 2: Set Up Your GitHub Repository
 
-## 🚀 Platform Access
+1. Create a new repository: `tpt-client-journey` in the `jennifertitanpro` account
+2. Create the following folder structure:
+   ```
+   tpt-client-journey/
+   ├── clients/
+   │   └── README.md
+   ├── index.html
+   ├── netlify.toml
+   ├── package.json
+   └── netlify/
+       └── functions/
+           └── github-oauth.js
+   ```
 
-Platform URL: `https://[your-netlify-url].netlify.app`
+## Step 3: Deploy to Netlify
 
-### For Coaches (Titan Pro Technologies Members)
-1. Sign in with your GitHub account
-2. You'll automatically get "COACH" role
-3. Select or add clients
-4. Track progress across all journey items
-5. Mark items as Not Applicable when needed
+### Option A: Deploy from GitHub (Recommended)
 
-### For Clients
-1. Sign in with GitHub account
-2. Fill in your ServiceTitan journey information
-3. Add notes for clarification
-4. Track your progress
+1. Push all files to your GitHub repository
+2. Go to [Netlify](https://app.netlify.com)
+3. Click "Add new site" → "Import an existing project"
+4. Choose "GitHub" and authorize Netlify
+5. Select the `tpt-client-journey` repository
+6. Deploy settings should be:
+   - Build command: (leave empty)
+   - Publish directory: `.`
+7. Click "Deploy site"
 
-## 📁 Repository Structure
+### Option B: Manual Deploy
+
+1. Create a folder with all the files
+2. Go to [Netlify](https://app.netlify.com)
+3. Drag and drop the folder to deploy
+
+## Step 4: Configure Environment Variables in Netlify
+
+1. In Netlify, go to your site → Site settings → Environment variables
+2. Add the following variables:
+   - **Key**: `GITHUB_CLIENT_ID`  
+     **Value**: (Your Client ID from Step 1)
+   - **Key**: `GITHUB_CLIENT_SECRET`  
+     **Value**: (Your Client Secret from Step 1)
+3. Click "Save"
+
+## Step 5: Update Your HTML File
+
+Make sure your `index.html` has the correct GitHub Client ID:
+```javascript
+const CONFIG = {
+    GITHUB_CLIENT_ID: 'YOUR_ACTUAL_CLIENT_ID_HERE', // Replace with your actual Client ID
+    BACKEND_URL: 'https://titan-pro-client-journey.netlify.app/.netlify/functions',
+    // ... rest of config
+};
+```
+
+## Step 6: Create Organization and Add Team Members
+
+1. Create or use existing GitHub organization: `titan-pro-technologies`
+2. Add team members who should have "coach" access as organization members
+3. Non-members will automatically get "client" access
+
+## File Structure Summary
+
+Your repository should contain:
 
 ```
 tpt-client-journey/
-├── index.html              # Main platform application
-├── package.json            # Node.js dependencies
-├── netlify.toml            # Netlify configuration
+├── index.html           (Your main application file)
+├── netlify.toml        (Netlify configuration)
+├── package.json        (Node package file)
 ├── netlify/
 │   └── functions/
-│       └── github-oauth.js # OAuth authentication handler
-├── clients/                # Client data storage (auto-generated)
-│   └── [client-email]/
-│       └── journey.json    # Client's journey data
-└── README.md              # This file
+│       └── github-oauth.js  (OAuth handler function)
+└── clients/            (Directory for storing client data)
+    └── README.md       (Can be empty, just to ensure folder exists)
 ```
 
-## 🔧 Technical Stack
+## Testing Your Setup
 
-- **Frontend**: HTML5, Tailwind CSS, Vanilla JavaScript
-- **Backend**: Netlify Functions (Serverless)
-- **Database**: GitHub Repository (JSON files)
-- **Authentication**: GitHub OAuth
-- **Hosting**: Netlify
-- **API**: GitHub REST API via Octokit
+1. **Test Demo Mode First**:
+   - Go to your site: https://titan-pro-client-journey.netlify.app
+   - Click "Demo: Client View" or "Demo: Coach View"
+   - This should work without any GitHub setup
 
-## 🛡️ Security
+2. **Test GitHub Login**:
+   - Click "Sign in with GitHub"
+   - Authorize the application
+   - You should be logged in with your role (coach if in org, client if not)
 
-- OAuth 2.0 authentication via GitHub
-- Role-based access control (Organization-based)
-- Client data isolation
-- Secure token handling
-- No sensitive data in frontend code
+## Troubleshooting
 
-## 📊 Journey Categories
+### "Authentication failed" error
+- Check that environment variables are set correctly in Netlify
+- Verify the Client ID in your HTML matches the GitHub OAuth App
+- Check Netlify Functions logs: Netlify dashboard → Functions → github-oauth → View logs
 
-### 1. ServiceTitan Settings
-- Tenant Information
-- Billing Configuration
-- Company Profile
-- Customer Types
-- Text Messaging Setup
+### CORS errors
+- The netlify.toml file should handle CORS headers
+- Make sure the function URL matches your site URL
 
-### 2. People & Payroll
-- Employee Management
-- Technician Setup
-- Skills Configuration
-- Payroll Profiles
+### "404 Not Found" on function call
+- Ensure the function is deployed: Check Netlify dashboard → Functions
+- Verify the function path is correct: `/.netlify/functions/github-oauth`
 
-### 3. Integrations
-- Booking Providers (Angi, Facebook, etc.)
-- Financing Partners
-- GPS Integration
-- QuickBooks Connection
+### Repository access issues
+- Make sure the repository `jennifertitanpro/tpt-client-journey` exists
+- Ensure the `clients` folder exists in the repository
+- Check that the OAuth token has the `repo` scope
 
-### 4. Operations
-- Dispatch Configuration
-- Marketing Pro
-- Capacity Planning
-- Business Units
-- Campaigns
+## Next Steps
 
-### 5. Phones & Communications
-- Call Recording
-- Chat Configuration
-- Customer Notifications
-- Emergency Fallback
+Once everything is working:
 
-## 👥 User Roles
-
-### Coaches
-- Members of `titan-pro-technologies` organization
-- Can manage multiple clients
-- Mark fields as "Not Applicable"
-- View all client progress
-
-### Clients
-- External users
-- Access only their own data
-- Update journey information
-- Add notes and track progress
-
-## 🔐 Environment Variables
-
-Required in Netlify:
-- `GITHUB_CLIENT_ID` - OAuth App Client ID
-- `GITHUB_CLIENT_SECRET` - OAuth App Secret (keep secure!)
-- `FRONTEND_URL` - Your Netlify URL
-- `GITHUB_ORG_NAME` - titan-pro-technologies
-
-## 📝 Data Structure
-
-Each client's journey data includes:
-- Field values (text, checkboxes, selections)
-- Completion status
-- Not Applicable flags (coach only)
-- Notes for each field
-- Timestamps for updates
-
-## 🚀 Deployment
-
-1. Fork/clone this repository
-2. Deploy to Netlify
-3. Configure environment variables
-4. Update OAuth App URLs
-5. Update `BACKEND_URL` in index.html
-
-## 🤝 Contributing
-
-This is a private repository for Titan Pro Technologies. For access or questions, contact your administrator.
-
-## 📞 Support
-
-- **Repository Owner**: jennifertitanpro
-- **Organization**: titan-pro-technologies
-- **Platform Issues**: Create an issue in this repository
-
-## 📄 License
-
-Private and Confidential - Titan Pro Technologies
-
----
-
-*Built to streamline ServiceTitan implementations for our valued clients*
+1. Add real clients by clicking "Add Client" in coach view
+2. Client data will be stored in GitHub at `clients/email_at_domain.com/journey.json`
+3. Use the export feature to download client progress reports
+4. Customize the journey structure in the `journeyStructure` object as needed
