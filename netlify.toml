@@ -1,10 +1,5 @@
-{
-  "name": "tpt-client-journey-functions",
-  "version": "1.0.0",
-  "description": "Netlify Functions for TPT Client Journey",
-  "scripts": {
-    "build": "echo 'No build needed'"
-  },
-  "dependencies": {},
-  "devDependencies": {}
-}
+[build]
+  functions = "netlify/functions"
+
+[functions]
+  directory = "netlify/functions"
